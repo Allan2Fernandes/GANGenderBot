@@ -125,6 +125,6 @@ async def hello(ctx):
     await ctx.send(classification_prediction, file = discord.File("combined_image.jpeg"))
     pass
 
-Token = "MTAwMjYxODA1Nzg5NTcxMDg3MQ.GJHWMf.7Hr0_9BOAfdJYXbKsFhnelVxaOz1xxcX4Pp0jQ"
+Token = "TOKEN"
 
 bot.run(token=Token)
