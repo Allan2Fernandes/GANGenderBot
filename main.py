@@ -9,9 +9,12 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 intents = discord.Intents.all()
-model_path = "C:/Users/allan/PycharmProjects/FacialAttributeClassifier/Models/Epoch9.h5"
+classification_model_path = "C:/Users/allan/PycharmProjects/FacialAttributeClassifier/EyeGlassesModels/Epoch20.h5"
+generator_model_path = "C:/Users/allan/PycharmProjects/GANGradientAscent/Models/Epoch340/Generator.h5"
+noise_dimensions = 64
 bot = commands.Bot(command_prefix='!', intents=intents)
 loss_function = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
@@ -68,12 +71,12 @@ def get_prediction_CAM(processed_tensor):
         input_tensor = preprocess_input_image(processed_tensor)
         tape.watch(input_tensor)
         saved_image_tensor = input_tensor[0]
-        actual_prediction = model(input_tensor)
+        actual_prediction = classification_model(input_tensor)
         if actual_prediction[0] > 0.5:
-            classification_prediction = "Male with certainty = {0}".format(actual_prediction[0][0])
+            classification_prediction = "Glasses with certainty = {0}".format(actual_prediction[0][0])
             expected_prediction = tf.ones_like(actual_prediction)
         else:
-            classification_prediction = "Female with certainty = {0}".format(1 - actual_prediction[0][0])
+            classification_prediction = "Without glasses with certainty = {0}".format(1 - actual_prediction[0][0])
             expected_prediction = tf.zeros_like(actual_prediction)
             pass
         loss = loss_function(y_true=expected_prediction, y_pred=actual_prediction)
@@ -103,13 +106,15 @@ def post_process_tensor_for_saving(tensor):
 
 @bot.event
 async def on_ready():
-    global model
-    model = tf.keras.models.load_model(model_path)
+    global classification_model
+    global generator_model
+    classification_model = tf.keras.models.load_model(classification_model_path)
+    generator_model = tf.keras.models.load_model(generator_model_path)
     print("Ready")
     pass
 
 @bot.command(name='classify')
-async def hello(ctx):
+async def classify(ctx):
     #Get the url of the image attachment
     url = ctx.message.attachments[0].url
     #Get the image file from the url
@@ -125,6 +130,18 @@ async def hello(ctx):
     await ctx.send(classification_prediction, file = discord.File("combined_image.jpeg"))
     pass
 
-Token = "TOKEN"
+@bot.command(name='gen')
+async def generate_image(ctx):
+    noise = tf.random.normal([1, noise_dimensions])
+    generated_image = generator_model(noise)
+    generated_image = generated_image*0.5 + 0.5
+    generated_image = tf.squeeze(generated_image)
+    image = post_process_tensor_for_saving(generated_image)
+    resized = cv2.resize(image, (512, 512), interpolation=cv2.INTER_AREA)
+    generated_image_file = Image.fromarray(resized)
+    generated_image_file.save("generated_image.jpeg")
+    await ctx.send("Generated Image", file=discord.File("generated_image.jpeg"))
+
+Token = "MTAwMjYxODA1Nzg5NTcxMDg3MQ.GgU6AI.-RrHBoWMhZSirJLLfYiOs50ZRhsTSW4XL4Pfvc"
 
 bot.run(token=Token)
