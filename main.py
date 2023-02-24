@@ -142,6 +142,6 @@ async def generate_image(ctx):
     generated_image_file.save("generated_image.jpeg")
     await ctx.send("Generated Image", file=discord.File("generated_image.jpeg"))
 
-Token = "MTAwMjYxODA1Nzg5NTcxMDg3MQ.GgU6AI.-RrHBoWMhZSirJLLfYiOs50ZRhsTSW4XL4Pfvc"
+Token = "Token"
 
 bot.run(token=Token)
